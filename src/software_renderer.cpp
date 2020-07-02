@@ -258,25 +258,16 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
                                              Color color) {
   // Task 1:
   // Implement triangle rasterization (you may want to call fill_sample here)
+  auto isOutsidePlane = [](float x, float y, float x0, float y0, float x1,
+                           float y1) {
+    return (x - x0) * (y1 - y0) - (y - y0) * (x1 - x0);
+  };
+
   auto isInsideTriangle = [&](float x, float y) {
     // Test if point is in triangle
-    // Point outside line 1?
-    vector<float> line_1 = {x1 - x0, y1 - y0};
-    vector<float> perp_1 = {line_1[1], -line_1[0]};
-    vector<float> to_point_1 = {x - x0, y - y0};
-    float side_1 = to_point_1[0] * perp_1[0] + to_point_1[1] * perp_1[1];
-
-    // Point outside line 2?
-    vector<float> line_2 = {x2 - x1, y2 - y1};
-    vector<float> perp_2 = {line_2[1], -line_2[0]};
-    vector<float> to_point_2 = {x - x1, y - y1};
-    float side_2 = to_point_2[0] * perp_2[0] + to_point_2[1] * perp_2[1];
-
-    // Point outside line 3?
-    vector<float> line_3 = {x0 - x2, y0 - y2};
-    vector<float> perp_3 = {line_3[1], -line_3[0]};
-    vector<float> to_point_3 = {x - x2, y - y2};
-    float side_3 = to_point_3[0] * perp_3[0] + to_point_3[1] * perp_3[1];
+    float side_1 = isOutsidePlane(x, y, x0, y0, x1, y1);
+    float side_2 = isOutsidePlane(x, y, x1, y1, x2, y2);
+    float side_3 = isOutsidePlane(x, y, x2, y2, x0, y0);
 
     return (side_1 < 0 && side_2 < 0 && side_3 < 0);
   };
