@@ -1,5 +1,3 @@
-#include "hardware_renderer.h"
-
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -7,6 +5,8 @@
 
 #include "GL/glew.h"
 #include "triangulation.h"
+
+#include "hardware_renderer.h"
 
 using namespace std;
 
