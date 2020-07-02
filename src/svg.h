@@ -5,11 +5,10 @@
 #include <vector>
 
 #include "color.h"
-#include "texture.h"
-#include "vector2D.h"
 #include "matrix3x3.h"
-
+#include "texture.h"
 #include "tinyxml2.h"
+#include "vector2D.h"
 using namespace tinyxml2;
 
 namespace CS248 {
@@ -34,11 +33,10 @@ struct Style {
 };
 
 struct SVGElement {
+  SVGElement(SVGElementType _type)
+      : type(_type), transform(Matrix3x3::identity()) {}
 
-  SVGElement( SVGElementType _type ) 
-    : type( _type ), transform( Matrix3x3::identity() ) { }
-
-  virtual ~SVGElement() { }
+  virtual ~SVGElement() {}
 
   // primitive type
   SVGElementType type;
@@ -48,107 +46,85 @@ struct SVGElement {
 
   // transformation list
   Matrix3x3 transform;
-  
 };
 
 struct Group : SVGElement {
-
-  Group() : SVGElement  ( GROUP ) { }
+  Group() : SVGElement(GROUP) {}
   std::vector<SVGElement*> elements;
 
   ~Group();
-
 };
 
 struct Point : SVGElement {
-
-  Point() : SVGElement ( POINT ) { }
+  Point() : SVGElement(POINT) {}
   Vector2D position;
-
 };
 
 struct Line : SVGElement {
-
-  Line() : SVGElement ( LINE ) { }  
+  Line() : SVGElement(LINE) {}
   Vector2D from;
   Vector2D to;
-
 };
 
 struct Polyline : SVGElement {
-
-  Polyline() : SVGElement  ( POLYLINE ) { }
+  Polyline() : SVGElement(POLYLINE) {}
   std::vector<Vector2D> points;
-
 };
 
 struct Rect : SVGElement {
-
-  Rect() : SVGElement ( RECT ) { }
+  Rect() : SVGElement(RECT) {}
   Vector2D position;
   Vector2D dimension;
-
 };
 
 struct Polygon : SVGElement {
-
-  Polygon() : SVGElement  ( POLYGON ) { }
+  Polygon() : SVGElement(POLYGON) {}
   std::vector<Vector2D> points;
-
 };
 
 struct Ellipse : SVGElement {
-
-  Ellipse() : SVGElement  ( ELLIPSE ) { }
+  Ellipse() : SVGElement(ELLIPSE) {}
   Vector2D center;
   Vector2D radius;
-
 };
 
 struct Image : SVGElement {
-
-  Image() : SVGElement  ( IMAGE ) { }
+  Image() : SVGElement(IMAGE) {}
   Vector2D position;
   Vector2D dimension;
   Texture tex;
-  
 };
 
 struct SVG {
-
   ~SVG();
   float width, height;
   std::vector<SVGElement*> elements;
-
 };
 
 class SVGParser {
  public:
+  static int load(const char* filename, SVG* svg);
+  static int save(const char* filename, const SVG* svg);
 
-  static int load( const char* filename, SVG* svg );
-  static int save( const char* filename, const SVG* svg );
- 
  private:
-  
   // parse a svg file
-  static void parseSVG       ( XMLElement* xml, SVG* svg );
+  static void parseSVG(XMLElement* xml, SVG* svg);
 
   // parse shared properties of svg elements
-  static void parseElement   ( XMLElement* xml, SVGElement* element );
-  
+  static void parseElement(XMLElement* xml, SVGElement* element);
+
   // parse type specific properties
-  static void parsePoint     ( XMLElement* xml, Point*    point       );
-  static void parseLine      ( XMLElement* xml, Line*     line        );
-  static void parsePolyline  ( XMLElement* xml, Polyline* polyline    );
-  static void parseRect      ( XMLElement* xml, Rect*     rect        );
-  static void parsePolygon   ( XMLElement* xml, Polygon*  polygon     );
-  static void parseEllipse   ( XMLElement* xml, Ellipse*  ellipse     );
-  static void parseImage     ( XMLElement* xml, Image*    image       );
-  static void parseGroup     ( XMLElement* xml, Group*    group       );
+  static void parsePoint(XMLElement* xml, Point* point);
+  static void parseLine(XMLElement* xml, Line* line);
+  static void parsePolyline(XMLElement* xml, Polyline* polyline);
+  static void parseRect(XMLElement* xml, Rect* rect);
+  static void parsePolygon(XMLElement* xml, Polygon* polygon);
+  static void parseEllipse(XMLElement* xml, Ellipse* ellipse);
+  static void parseImage(XMLElement* xml, Image* image);
+  static void parseGroup(XMLElement* xml, Group* group);
 
+};  // class SVGParser
 
-}; // class SVGParser
+}  // namespace CS248
 
-} // namespace CS248
-
-#endif // CS248_SVG_H
+#endif  // CS248_SVG_H

@@ -25,6 +25,6 @@ class OSDText;
 class Viewer;
 class Timer;
 
-} // namespace CS248
+}  // namespace CS248
 
-#endif // CS248_H
+#endif  // CS248_H

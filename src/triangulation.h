@@ -6,9 +6,8 @@
 namespace CS248 {
 
 // triangulates a polygon and save the result as a triangle list
-void triangulate(const Polygon& polygon, std::vector<Vector2D>& triangles );
+void triangulate(const Polygon& polygon, std::vector<Vector2D>& triangles);
 
-} // namespace CS248
+}  // namespace CS248
 
-#endif // CS248_TRIANGULATION_H
-
+#endif  // CS248_TRIANGULATION_H
