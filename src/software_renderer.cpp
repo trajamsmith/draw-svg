@@ -258,6 +258,45 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
                                              Color color) {
   // Task 1:
   // Implement triangle rasterization (you may want to call fill_sample here)
+  auto isInsideTriangle = [&](float x, float y) {
+    // Test if point is in triangle
+    // Point outside line 1?
+    vector<float> line_1 = {x1 - x0, y1 - y0};
+    vector<float> perp_1 = {line_1[1], -line_1[0]};
+    vector<float> to_point_1 = {x - x0, y - y0};
+    float side_1 = to_point_1[1] * perp_1[1] + to_point_1[0] * perp_1[0];
+
+    // Point outside line 2?
+    vector<float> line_2 = {x2 - x1, y2 - y1};
+    vector<float> perp_2 = {line_2[1], -line_2[0]};
+    vector<float> to_point_2 = {x - x1, y - y1};
+    float side_2 = to_point_2[1] * perp_2[1] + to_point_2[0] * perp_2[0];
+
+    // Point outside line 3?
+    vector<float> line_3 = {x0 - x2, y0 - y2};
+    vector<float> perp_3 = {line_3[1], -line_3[0]};
+    vector<float> to_point_3 = {x - x2, y - y2};
+    float side_3 = to_point_3[1] * perp_3[1] + to_point_3[0] * perp_3[0];
+
+    return (side_1 > 0 && side_2 > 0 && side_3 > 0);
+  };
+
+  // Iterate over all pixels in render_target
+  for (int x; x < target_w; x++) {
+    for (int y; y < target_h; y++) {
+      // Get the center point
+      float sx = x + 0.5;
+      float sy = y + 0.5;
+
+      // If so, color it
+      if (isInsideTriangle(sx, sy)) {
+        render_target[4 * (x + y * target_w)] = (uint8_t)(color.r * 255);
+        render_target[4 * (x + y * target_w) + 1] = (uint8_t)(color.g * 255);
+        render_target[4 * (x + y * target_w) + 2] = (uint8_t)(color.b * 255);
+        render_target[4 * (x + y * target_w) + 3] = (uint8_t)(color.a * 255);
+      }
+    }
+  }
 }
 
 void SoftwareRendererImp::rasterize_image(float x0, float y0, float x1,
