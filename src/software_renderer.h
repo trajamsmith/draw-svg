@@ -41,6 +41,11 @@ class SoftwareRenderer : public SVGRenderer {
   virtual void set_render_target(unsigned char *render_target, size_t width,
                                  size_t height) = 0;
 
+  // Set supersampling target
+  virtual void set_supersample_target(
+      unique_ptr<vector<uint8_t>> supersample_target, size_t width,
+      size_t height) = 0;
+
   // Clear render target
   inline void clear_target() {
     memset(render_target, 255, 4 * target_w * target_h);
@@ -65,6 +70,13 @@ class SoftwareRenderer : public SVGRenderer {
   size_t target_w;
   size_t target_h;
 
+  // Supersampling buffer
+  unique_ptr<vector<uint8_t>> supersample_target;
+
+  // Supersampling buffer dimensions
+  size_t ss_w;
+  size_t ss_h;
+
   // Texture sampler being used
   Sampler2D *sampler;
 
@@ -87,6 +99,10 @@ class SoftwareRendererImp : public SoftwareRenderer {
   // set render target
   void set_render_target(unsigned char *target_buffer, size_t width,
                          size_t height);
+
+  virtual void set_supersample_target(
+      unique_ptr<vector<uint8_t>> supersample_target, size_t width,
+      size_t height);
 
   std::vector<unsigned char> sample_buffer;
   int w;

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <memory>
 #include <vector>
 
 #include "triangulation.h"
@@ -20,6 +21,8 @@ void SoftwareRendererImp::fill_sample(int sx, int sy, const Color& color) {}
 void SoftwareRendererImp::fill_pixel(int x, int y, const Color& color) {
   // Task 2: Re-implement this function
 
+  // TODO: I don't think this needs to change if we just increase the
+  // TODO: values of render_target, target_w, and target_h??????????
   // check bounds
   if (x < 0 || x >= target_w) return;
   if (y < 0 || y >= target_h) return;
@@ -75,15 +78,34 @@ void SoftwareRendererImp::set_sample_rate(size_t sample_rate) {
   // Task 2:
   // You may want to modify this for supersampling support
   this->sample_rate = sample_rate;
+
+  // TODO: make render_target bigger, increase target_w and target_h
+  // TODO: actually, we should allocate a new 2D array for this, maybe
+  // TODO: still increase target_w and target_h???
+  int ss_w = target_w * sample_rate;
+  int ss_h = target_h * sample_rate;
+  unique_ptr<vector<uint8_t>> supersample_target(4 * ss_w * ss_h, 0.0);
+
+  set_supersample_target(supersample_target, ss_w, ss_h)
 }
 
 void SoftwareRendererImp::set_render_target(unsigned char* render_target,
                                             size_t width, size_t height) {
   // Task 2:
   // You may want to modify this for supersampling support
+
+  // TODO: this should be called by set_sample_rate with updated values
   this->render_target = render_target;
   this->target_w = width;
   this->target_h = height;
+}
+
+void SoftwareRendererImp::set_supersample_target(
+    unique_ptr<vector<uint8_t>> supersample_target, size_t width,
+    size_t height) {
+  this->supersample_target = supersample_target;
+  this->ss_w = width;
+  this->ss_h = height;
 }
 
 void SoftwareRendererImp::draw_element(SVGElement* element) {
@@ -304,6 +326,9 @@ void SoftwareRendererImp::resolve(void) {
   // Task 2:
   // Implement supersampling
   // You may also need to modify other functions marked with "Task 2".
+
+  // TODO: sample the render_target with the final output image's pixel
+  // TODO: dimensions
   return;
 }
 
