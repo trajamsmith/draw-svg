@@ -42,9 +42,8 @@ class SoftwareRenderer : public SVGRenderer {
                                  size_t height) = 0;
 
   // Set supersampling target
-  virtual void set_supersample_target(
-      unique_ptr<vector<uint8_t>> supersample_target, size_t width,
-      size_t height) = 0;
+  virtual void set_supersample_target(vector<uint8_t> supersample_target,
+                                      size_t width, size_t height) = 0;
 
   // Clear render target
   inline void clear_target() {
@@ -100,9 +99,9 @@ class SoftwareRendererImp : public SoftwareRenderer {
   void set_render_target(unsigned char *target_buffer, size_t width,
                          size_t height);
 
-  virtual void set_supersample_target(
-      unique_ptr<vector<uint8_t>> supersample_target, size_t width,
-      size_t height);
+  // set supersample target
+  void set_supersample_target(vector<uint8_t> supersample_target, size_t width,
+                              size_t height);
 
   std::vector<unsigned char> sample_buffer;
   int w;
@@ -216,6 +215,9 @@ class SoftwareRendererRef : public SoftwareRenderer {
   // set render target
   void set_render_target(unsigned char *target_buffer, size_t width,
                          size_t height);
+
+  void set_supersample_target(vector<uint8_t> supersample_target, size_t width,
+                              size_t height);
 
   // Exposing/reimplementing these functions for CS248
 

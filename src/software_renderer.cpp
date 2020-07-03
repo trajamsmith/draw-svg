@@ -84,9 +84,11 @@ void SoftwareRendererImp::set_sample_rate(size_t sample_rate) {
   // TODO: still increase target_w and target_h???
   int ss_w = target_w * sample_rate;
   int ss_h = target_h * sample_rate;
-  unique_ptr<vector<uint8_t>> supersample_target(4 * ss_w * ss_h, 0.0);
 
-  set_supersample_target(supersample_target, ss_w, ss_h)
+  int target_size = 4 * ss_w * ss_h;
+  vector<uint8_t> supersample_target(target_size, (uint8_t)(0));
+
+  this->set_supersample_target(supersample_target, ss_w, ss_h);
 }
 
 void SoftwareRendererImp::set_render_target(unsigned char* render_target,
@@ -100,10 +102,9 @@ void SoftwareRendererImp::set_render_target(unsigned char* render_target,
   this->target_h = height;
 }
 
-void SoftwareRendererImp::set_supersample_target(
-    unique_ptr<vector<uint8_t>> supersample_target, size_t width,
-    size_t height) {
-  this->supersample_target = supersample_target;
+void SoftwareRendererImp::set_supersample_target(vector<uint8_t> target_vector,
+                                                 size_t width, size_t height) {
+  this->supersample_target = make_unique<vector<uint8_t>>(target_vector);
   this->ss_w = width;
   this->ss_h = height;
 }
