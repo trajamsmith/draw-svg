@@ -22,6 +22,8 @@ double Get_Current_Time();
 double Initialize_Timer();
 #endif
 
+using namespace std;
+
 class SoftwareRendererRef;
 
 class SoftwareRenderer : public SVGRenderer {

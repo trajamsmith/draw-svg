@@ -308,10 +308,14 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
 
       // If so, color it
       if (isInsideTriangle(sx, sy)) {
-        render_target[4 * (x + y * target_w)] = (uint8_t)(color.r * 255);
-        render_target[4 * (x + y * target_w) + 1] = (uint8_t)(color.g * 255);
-        render_target[4 * (x + y * target_w) + 2] = (uint8_t)(color.b * 255);
-        render_target[4 * (x + y * target_w) + 3] = (uint8_t)(color.a * 255);
+        supersample_target[4 * (x + y * target_w)] =
+            make_unique<uint8_t>(color.r * 255);
+        supersample_target[4 * (x + y * target_w) + 1] =
+            make_unique<uint8_t>(color.r * 255);
+        supersample_target[4 * (x + y * target_w) + 2] =
+            make_unique<uint8_t>(color.r * 255);
+        supersample_target[4 * (x + y * target_w) + 3] =
+            make_unique<uint8_t>(color.r * 255);
       }
     }
   }
