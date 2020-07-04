@@ -79,17 +79,10 @@ void SoftwareRendererImp::set_sample_rate(size_t sample_rate) {
   // You may want to modify this for supersampling support
   this->sample_rate = sample_rate;
 
-  // TODO: make render_target bigger, increase target_w and target_h
-  // TODO: actually, we should allocate a new 2D array for this, maybe
-  // TODO: still increase target_w and target_h???
   int ss_w = target_w * sample_rate;
   int ss_h = target_h * sample_rate;
 
-  int target_size = 4 * ss_w * ss_h;
-  vector<unique_ptr<uint8_t>> supersample_target(target_size,
-                                                 make_unique<uint8_t>(0));
-
-  this->set_supersample_target(supersample_target, ss_w, ss_h);
+  this->set_supersample_target(ss_w, ss_h);
 }
 
 void SoftwareRendererImp::set_render_target(unsigned char* render_target,
@@ -103,9 +96,9 @@ void SoftwareRendererImp::set_render_target(unsigned char* render_target,
   this->target_h = height;
 }
 
-void SoftwareRendererImp::set_supersample_target(
-    vector<unique_ptr<uint8_t>> target_vector, size_t width, size_t height) {
-  this->supersample_target = target_vector;
+void SoftwareRendererImp::set_supersample_target(size_t width, size_t height) {
+  int target_size = 4 * ss_w * ss_h;
+  this->supersample_target = move(vector<unique_ptr<uint8_t>>(target_size));
   this->ss_w = width;
   this->ss_h = height;
 }
