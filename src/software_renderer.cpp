@@ -83,14 +83,16 @@ void SoftwareRendererImp::set_sample_rate(size_t sample_rate) {
   int ss_w = target_w * sample_rate;
   int ss_h = target_h * sample_rate;
 
-  this->set_supersample_target(ss_w, ss_h);
+  set_supersample_target(ss_w, ss_h);
 }
 
 void SoftwareRendererImp::set_supersample_target(size_t width, size_t height) {
-  int target_size = 4 * ss_w * ss_h;
-  this->supersample_target = move(vector<unique_ptr<uint8_t>>(target_size));
   this->ss_w = width;
   this->ss_h = height;
+
+  int target_size = 4 * width * height;
+  cout << "Creating supersample vector of size: " << target_size << endl;
+  supersample_target = move(vector<unique_ptr<uint8_t>>(target_size));
 }
 
 void SoftwareRendererImp::set_render_target(unsigned char* render_target,
@@ -300,23 +302,23 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
 
       // If so, color it
       if (isInsideTriangle(sx, sy)) {
-        if (supersample_target.size() > 0) {
-          supersample_target[4 * (x + y * target_w)] =
-              make_unique<uint8_t>(color.r * 255);
-          supersample_target[4 * (x + y * target_w) + 1] =
-              make_unique<uint8_t>(color.r * 255);
-          supersample_target[4 * (x + y * target_w) + 2] =
-              make_unique<uint8_t>(color.r * 255);
-          supersample_target[4 * (x + y * target_w) + 3] =
-              make_unique<uint8_t>(color.r * 255);
-        }
+        // if (supersample_target.size() > 0) {
+        //   supersample_target[4 * (x + y * target_w)] =
+        //       make_unique<uint8_t>(color.r * 255);
+        //   supersample_target[4 * (x + y * target_w) + 1] =
+        //       make_unique<uint8_t>(color.r * 255);
+        //   supersample_target[4 * (x + y * target_w) + 2] =
+        //       make_unique<uint8_t>(color.r * 255);
+        //   supersample_target[4 * (x + y * target_w) + 3] =
+        //       make_unique<uint8_t>(color.r * 255);
+        // }
 
-        else {
-          render_target[4 * (x + y * target_w)] = (uint8_t)(color.r * 255);
-          render_target[4 * (x + y * target_w) + 1] = (uint8_t)(color.g * 255);
-          render_target[4 * (x + y * target_w) + 2] = (uint8_t)(color.b * 255);
-          render_target[4 * (x + y * target_w) + 3] = (uint8_t)(color.a * 255);
-        }
+        // else {
+        render_target[4 * (x + y * target_w)] = (uint8_t)(color.r * 255);
+        render_target[4 * (x + y * target_w) + 1] = (uint8_t)(color.g * 255);
+        render_target[4 * (x + y * target_w) + 2] = (uint8_t)(color.b * 255);
+        render_target[4 * (x + y * target_w) + 3] = (uint8_t)(color.a * 255);
+        // }
       }
     }
   }
