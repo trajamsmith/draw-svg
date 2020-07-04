@@ -91,7 +91,7 @@ class SoftwareRendererImp : public SoftwareRenderer {
                          size_t height);
 
   // set supersample target
-  void set_supersample_target(size_t width, size_t height);
+  void set_sample_target(size_t width, size_t height);
 
   std::vector<unsigned char> sample_buffer;
   int w;
@@ -101,11 +101,12 @@ class SoftwareRendererImp : public SoftwareRenderer {
 
  private:
   // Supersampling buffer
-  vector<unique_ptr<uint8_t>> supersample_target;
+  vector<unique_ptr<uint8_t>> sample_target =
+      vector<unique_ptr<uint8_t>>(this->target_w * this->target_h);
 
   // Supersampling buffer dimensions
-  size_t ss_w;
-  size_t ss_h;
+  size_t ss_w = this->target_w;
+  size_t ss_h = this->target_h;
 
   // Primitive Drawing //
 

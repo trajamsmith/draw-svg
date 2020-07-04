@@ -80,28 +80,35 @@ void SoftwareRendererImp::set_sample_rate(size_t sample_rate) {
   cout << "Changing the sample rate." << endl;
   this->sample_rate = sample_rate;
 
-  int ss_w = this->target_w * sample_rate;
-  int ss_h = this->target_h * sample_rate;
+  int new_width = this->target_w * sample_rate;
+  int new_height = this->target_h * sample_rate;
 
+  set_sample_target(new_width, new_height);
+}
+
+void SoftwareRendererImp::set_sample_target(size_t width, size_t height) {
   this->ss_w = ss_w;
   this->ss_h = ss_h;
 
-  set_supersample_target(ss_w, ss_h);
-}
-
-void SoftwareRendererImp::set_supersample_target(size_t width, size_t height) {
   int target_size = 4 * width * height;
   cout << "Creating supersample vector of size: " << target_size << endl;
-  this->supersample_target = move(vector<unique_ptr<uint8_t>>(target_size));
+  this->sample_target = move(vector<unique_ptr<uint8_t>>(target_size));
 }
 
 void SoftwareRendererImp::set_render_target(unsigned char* render_target,
                                             size_t width, size_t height) {
   // Task 2:
   // You may want to modify this for supersampling support
+
+  // Set the target values
   this->render_target = render_target;
   this->target_w = width;
   this->target_h = height;
+
+  // This will update the sample_target
+  // with the appropriate information
+  int curr_sample_rate = this->sample_rate;
+  set_sample_rate(curr_sample_rate);
 }
 
 void SoftwareRendererImp::draw_element(SVGElement* element) {
@@ -274,6 +281,7 @@ void SoftwareRendererImp::rasterize_line(float x0, float y0, float x1, float y1,
 void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
                                              float y1, float x2, float y2,
                                              Color color) {
+  cout << "Rasterizing triangle." << endl;
   // Task 1:
   // Implement triangle rasterization (you may want to call fill_sample here)
   auto isOutsidePlane = [](float x, float y, float x0, float y0, float x1,
@@ -297,26 +305,20 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
       float sx = x + 0.5;
       float sy = y + 0.5;
 
+      // If out of bounds, break
       if (sx < 0 || sx >= target_w) break;
       if (sy < 0 || sy >= target_h) break;
 
       // If so, color it
       if (isInsideTriangle(sx, sy)) {
-        if (supersample_target.size() > 0) {
-          supersample_target[4 * (x + y * target_w)] =
-              make_unique<uint8_t>(color.r * 255);
-          supersample_target[4 * (x + y * target_w) + 1] =
-              make_unique<uint8_t>(color.r * 255);
-          supersample_target[4 * (x + y * target_w) + 2] =
-              make_unique<uint8_t>(color.r * 255);
-          supersample_target[4 * (x + y * target_w) + 3] =
-              make_unique<uint8_t>(color.r * 255);
-        } else {
-          render_target[4 * (x + y * target_w)] = (uint8_t)(color.r * 255);
-          render_target[4 * (x + y * target_w) + 1] = (uint8_t)(color.g * 255);
-          render_target[4 * (x + y * target_w) + 2] = (uint8_t)(color.b * 255);
-          render_target[4 * (x + y * target_w) + 3] = (uint8_t)(color.a * 255);
-        }
+        sample_target[4 * (x + y * target_w)] =
+            make_unique<uint8_t>(color.r * 255);
+        sample_target[4 * (x + y * target_w) + 1] =
+            make_unique<uint8_t>(color.r * 255);
+        sample_target[4 * (x + y * target_w) + 2] =
+            make_unique<uint8_t>(color.r * 255);
+        sample_target[4 * (x + y * target_w) + 3] =
+            make_unique<uint8_t>(color.r * 255);
       }
     }
   }
@@ -330,12 +332,49 @@ void SoftwareRendererImp::rasterize_image(float x0, float y0, float x1,
 
 // resolve samples to render target
 void SoftwareRendererImp::resolve(void) {
+  cout << "Resolving samples to raster." << endl;
   // Task 2:
   // Implement supersampling
   // You may also need to modify other functions marked with "Task 2".
+  for (int x = 0; x < target_w; x++) {
+    for (int y = 0; y < target_h; y++) {
+      cout << "MAKING IT HERE" << endl;
+      // Color accumulators
+      vector<double> col_acc(4);
+      // Kernel width
+      int k_width = sqrt(sample_rate);
 
-  // TODO: sample the render_target with the final output image's pixel
-  // TODO: dimensions
+      for (int row = 0; row < k_width; row += k_width) {
+        cout << "MAKING IT HERE NOW" << endl;
+        int start_index = y * (ss_w * k_width) + (x * k_width) + (row * ss_w);
+        int end_index = start_index + k_width;
+
+        for (int i = start_index; i < end_index; i += 1) {
+          cout << "MAKING IT HERE LAST OF ALL" << endl;
+          cout << "SAMPLE TARGET HAS SIZE: " << sample_target.size() << endl;
+          cout << "i is: " << i << endl;
+          cout << "with sample val: " << *sample_target[0] << endl;
+          col_acc[0] = col_acc[0] + *sample_target[4 * i];
+          col_acc[1] = col_acc[1] + *sample_target[4 * i + 1];
+          col_acc[2] = col_acc[2] + *sample_target[4 * i + 2];
+          col_acc[3] = col_acc[3] + *sample_target[4 * i + 3];
+        }
+      }
+
+      // Average samples from the sample_target
+      Color color;
+      color.r = col_acc[0] / sample_rate;
+      color.g = col_acc[1] / sample_rate;
+      color.b = col_acc[2] / sample_rate;
+      color.a = col_acc[3] / sample_rate;
+
+      // this->fill_pixel(x, y, color);
+      render_target[4 * (x + y * target_w)] = (uint8_t)(color.r * 255);
+      render_target[4 * (x + y * target_w) + 1] = (uint8_t)(color.g * 255);
+      render_target[4 * (x + y * target_w) + 2] = (uint8_t)(color.b * 255);
+      render_target[4 * (x + y * target_w) + 3] = (uint8_t)(color.a * 255);
+    }
+  }
   return;
 }
 
