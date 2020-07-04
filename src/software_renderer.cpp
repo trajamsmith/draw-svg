@@ -92,11 +92,12 @@ void SoftwareRendererImp::set_sample_target(size_t width, size_t height) {
 
   int target_size = 4 * width * height;
   cout << "Creating supersample vector of size: " << target_size << endl;
-  this->sample_target = move(vector<unique_ptr<uint8_t>>(target_size));
+  this->sample_target = vector<uint8_t>(target_size);
 }
 
 void SoftwareRendererImp::set_render_target(unsigned char* render_target,
                                             size_t width, size_t height) {
+  cout << "Setting render target." << endl;
   // Task 2:
   // You may want to modify this for supersampling support
 
@@ -112,6 +113,7 @@ void SoftwareRendererImp::set_render_target(unsigned char* render_target,
 }
 
 void SoftwareRendererImp::draw_element(SVGElement* element) {
+  cout << "Drawing element." << endl;
   // Task 3 (part 1):
   // Modify this to implement the transformation stack
 
@@ -148,11 +150,13 @@ void SoftwareRendererImp::draw_element(SVGElement* element) {
 // Primitive Drawing //
 
 void SoftwareRendererImp::draw_point(Point& point) {
+  cout << "Drawing point." << endl;
   Vector2D p = transform(point.position);
   rasterize_point(p.x, p.y, point.style.fillColor);
 }
 
 void SoftwareRendererImp::draw_line(Line& line) {
+  cout << "Drawing line." << endl;
   Vector2D p0 = transform(line.from);
   Vector2D p1 = transform(line.to);
   rasterize_line(p0.x, p0.y, p1.x, p1.y, line.style.strokeColor);
@@ -298,27 +302,30 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
     return (side_1 < 0 && side_2 < 0 && side_3 < 0);
   };
 
-  // Iterate over all pixels in render_target
-  for (int x = 0; x < target_w; x++) {
-    for (int y = 0; y < target_h; y++) {
+  // Iterate over all the subpixels in the object space
+  for (int x = 0; x < target_w; x += (1 / sqrt(sample_rate))) {
+    for (int y = 0; y < target_h; y += (1 / sqrt(sample_rate))) {
       // Get the center point
-      float sx = x + 0.5;
-      float sy = y + 0.5;
+      float sx = x + (1 / sqrt(sample_rate)) / 2;
+      float sy = y + (1 / sqrt(sample_rate)) / 2;
 
       // If out of bounds, break
-      if (sx < 0 || sx >= target_w) break;
-      if (sy < 0 || sy >= target_h) break;
+      // if (sx < 0 || sx >= ss_w) break;
+      // if (sy < 0 || sy >= ss_h) break;
+
+      int row_index = x * sqrt(sample_rate);
+      int col_index = y * sqrt(sample_rate);
 
       // If so, color it
       if (isInsideTriangle(sx, sy)) {
-        sample_target[4 * (x + y * target_w)] =
-            make_unique<uint8_t>(color.r * 255);
-        sample_target[4 * (x + y * target_w) + 1] =
-            make_unique<uint8_t>(color.r * 255);
-        sample_target[4 * (x + y * target_w) + 2] =
-            make_unique<uint8_t>(color.r * 255);
-        sample_target[4 * (x + y * target_w) + 3] =
-            make_unique<uint8_t>(color.r * 255);
+        sample_target[4 * (row_index + col_index * ss_w)] =
+            (uint8_t)(color.r * 255);
+        sample_target[4 * (row_index + col_index * ss_w) + 1] =
+            (uint8_t)(color.r * 255);
+        sample_target[4 * (row_index + col_index * ss_w) + 2] =
+            (uint8_t)(color.r * 255);
+        sample_target[4 * (row_index + col_index * ss_w) + 3] =
+            (uint8_t)(color.r * 255);
       }
     }
   }
@@ -338,26 +345,20 @@ void SoftwareRendererImp::resolve(void) {
   // You may also need to modify other functions marked with "Task 2".
   for (int x = 0; x < target_w; x++) {
     for (int y = 0; y < target_h; y++) {
-      cout << "MAKING IT HERE" << endl;
       // Color accumulators
       vector<double> col_acc(4);
       // Kernel width
       int k_width = sqrt(sample_rate);
 
       for (int row = 0; row < k_width; row += k_width) {
-        cout << "MAKING IT HERE NOW" << endl;
         int start_index = y * (ss_w * k_width) + (x * k_width) + (row * ss_w);
         int end_index = start_index + k_width;
 
         for (int i = start_index; i < end_index; i += 1) {
-          cout << "MAKING IT HERE LAST OF ALL" << endl;
-          cout << "SAMPLE TARGET HAS SIZE: " << sample_target.size() << endl;
-          cout << "i is: " << i << endl;
-          cout << "with sample val: " << *sample_target[0] << endl;
-          col_acc[0] = col_acc[0] + *sample_target[4 * i];
-          col_acc[1] = col_acc[1] + *sample_target[4 * i + 1];
-          col_acc[2] = col_acc[2] + *sample_target[4 * i + 2];
-          col_acc[3] = col_acc[3] + *sample_target[4 * i + 3];
+          col_acc[0] = col_acc[0] + sample_target[4 * i];
+          col_acc[1] = col_acc[1] + sample_target[4 * i + 1];
+          col_acc[2] = col_acc[2] + sample_target[4 * i + 2];
+          col_acc[3] = col_acc[3] + sample_target[4 * i + 3];
         }
       }
 
@@ -367,6 +368,11 @@ void SoftwareRendererImp::resolve(void) {
       color.g = col_acc[1] / sample_rate;
       color.b = col_acc[2] / sample_rate;
       color.a = col_acc[3] / sample_rate;
+
+      if (y % 50 == 0 && x % 50 == 0) {
+        cout << "Red level at X=" << x << " and Y=" << y << " is " << color.r
+             << endl;
+      }
 
       // this->fill_pixel(x, y, color);
       render_target[4 * (x + y * target_w)] = (uint8_t)(color.r * 255);
