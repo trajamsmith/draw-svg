@@ -77,6 +77,7 @@ void SoftwareRendererImp::draw_svg(SVG& svg) {
 void SoftwareRendererImp::set_sample_rate(size_t sample_rate) {
   // Task 2:
   // You may want to modify this for supersampling support
+  cout << "Changing the sample rate." << endl;
   this->sample_rate = sample_rate;
 
   int ss_w = target_w * sample_rate;
@@ -85,22 +86,20 @@ void SoftwareRendererImp::set_sample_rate(size_t sample_rate) {
   this->set_supersample_target(ss_w, ss_h);
 }
 
-void SoftwareRendererImp::set_render_target(unsigned char* render_target,
-                                            size_t width, size_t height) {
-  // Task 2:
-  // You may want to modify this for supersampling support
-
-  // TODO: this should be called by set_sample_rate with updated values
-  this->render_target = render_target;
-  this->target_w = width;
-  this->target_h = height;
-}
-
 void SoftwareRendererImp::set_supersample_target(size_t width, size_t height) {
   int target_size = 4 * ss_w * ss_h;
   this->supersample_target = move(vector<unique_ptr<uint8_t>>(target_size));
   this->ss_w = width;
   this->ss_h = height;
+}
+
+void SoftwareRendererImp::set_render_target(unsigned char* render_target,
+                                            size_t width, size_t height) {
+  // Task 2:
+  // You may want to modify this for supersampling support
+  this->render_target = render_target;
+  this->target_w = width;
+  this->target_h = height;
 }
 
 void SoftwareRendererImp::draw_element(SVGElement* element) {
@@ -301,14 +300,23 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
 
       // If so, color it
       if (isInsideTriangle(sx, sy)) {
-        supersample_target[4 * (x + y * target_w)] =
-            make_unique<uint8_t>(color.r * 255);
-        supersample_target[4 * (x + y * target_w) + 1] =
-            make_unique<uint8_t>(color.r * 255);
-        supersample_target[4 * (x + y * target_w) + 2] =
-            make_unique<uint8_t>(color.r * 255);
-        supersample_target[4 * (x + y * target_w) + 3] =
-            make_unique<uint8_t>(color.r * 255);
+        if (supersample_target.size() > 0) {
+          supersample_target[4 * (x + y * target_w)] =
+              make_unique<uint8_t>(color.r * 255);
+          supersample_target[4 * (x + y * target_w) + 1] =
+              make_unique<uint8_t>(color.r * 255);
+          supersample_target[4 * (x + y * target_w) + 2] =
+              make_unique<uint8_t>(color.r * 255);
+          supersample_target[4 * (x + y * target_w) + 3] =
+              make_unique<uint8_t>(color.r * 255);
+        }
+
+        else {
+          render_target[4 * (x + y * target_w)] = (uint8_t)(color.r * 255);
+          render_target[4 * (x + y * target_w) + 1] = (uint8_t)(color.g * 255);
+          render_target[4 * (x + y * target_w) + 2] = (uint8_t)(color.b * 255);
+          render_target[4 * (x + y * target_w) + 3] = (uint8_t)(color.a * 255);
+        }
       }
     }
   }
