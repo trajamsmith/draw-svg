@@ -77,7 +77,7 @@ void SoftwareRendererImp::draw_svg(SVG& svg) {
 void SoftwareRendererImp::set_sample_rate(size_t sample_rate) {
   // Task 2:
   // You may want to modify this for supersampling support
-  cout << "Changing the sample rate." << endl;
+  cout << "Changing the sample rate to: " << sample_rate << endl;
   this->sample_rate = sample_rate;
 
   int supersample_width = this->target_w * sample_rate;
@@ -303,21 +303,24 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
   };
 
   // Iterate over all the subpixels in the object space
-  for (int x = 0; x < target_w; x += (1 / sqrt(sample_rate))) {
-    for (int y = 0; y < target_h; y += (1 / sqrt(sample_rate))) {
+  for (float x = 0; x < target_w; x = x + (1 / float(sample_rate))) {
+    for (float y = 0; y < target_h; y = y + (1 / float(sample_rate))) {
       // Get the center point
-      float sx = x + (1 / sqrt(sample_rate)) / 2;
-      float sy = y + (1 / sqrt(sample_rate)) / 2;
+      float sx = x + (1 / sample_rate) / 2;
+      float sy = y + (1 / sample_rate) / 2;
 
       // If out of bounds, break
       if (x < 0 || x >= target_w) break;
       if (y < 0 || y >= target_h) break;
 
-      int row_index = x * sqrt(sample_rate);
-      int col_index = y * sqrt(sample_rate);
+      int row_index = x * sample_rate;
+      int col_index = y * sample_rate;
 
-      if (x % 50 == 0 && y % 50 == 0) {
+      if (row_index % 50 == 0 && col_index % 50 == 0) {
         cout << "X and Y: " << x << " " << y << endl;
+        cout << "X update: " << (1 / sample_rate) << endl;
+        cout << "Target_W: " << target_w << " and Target_H: " << target_h
+             << endl;
         cout << "RowIndex and ColIndex: " << row_index << " " << col_index
              << endl;
         cout << "SS_W is: " << ss_w << endl;
@@ -357,7 +360,7 @@ void SoftwareRendererImp::resolve(void) {
       // Color accumulators
       vector<double> col_acc(4);
       // Kernel width
-      int k_width = sqrt(sample_rate);
+      int k_width = sample_rate;
 
       for (int row = 0; row < k_width; row += k_width) {
         int start_index = y * (ss_w * k_width) + (x * k_width) + (row * ss_w);
