@@ -23,27 +23,25 @@ void SoftwareRendererImp::fill_pixel(int x, int y, const Color& color) {
 
   // TODO: I don't think this needs to change if we just increase the
   // TODO: values of render_target, target_w, and target_h??????????
+  // Task 2: Re-implement this function
+
   // check bounds
   if (x < 0 || x >= target_w) return;
   if (y < 0 || y >= target_h) return;
 
-  // Color pixel_color;
-  // float inv255 = 1.0 / 255.0;
-  // pixel_color.r = render_target[4 * (x + y * target_w)] * inv255;
-  // pixel_color.g = render_target[4 * (x + y * target_w) + 1] * inv255;
-  // pixel_color.b = render_target[4 * (x + y * target_w) + 2] * inv255;
-  // pixel_color.a = render_target[4 * (x + y * target_w) + 3] * inv255;
+  Color pixel_color;
+  float inv255 = 1.0 / 255.0;
+  pixel_color.r = render_target[4 * (x + y * target_w)] * inv255;
+  pixel_color.g = render_target[4 * (x + y * target_w) + 1] * inv255;
+  pixel_color.b = render_target[4 * (x + y * target_w) + 2] * inv255;
+  pixel_color.a = render_target[4 * (x + y * target_w) + 3] * inv255;
 
-  // pixel_color = ref->alpha_blending_helper(pixel_color, color);
-  // if (x % 50 == 0 && y % 50 == 0) {
-  //   cout << pixel_color.r << ", " << pixel_color.g << ", " << pixel_color.b
-  //        << ", " << pixel_color.a << ", " << endl;
-  // }
+  pixel_color = ref->alpha_blending_helper(pixel_color, color);
 
-  render_target[4 * (x + y * target_w)] = (uint8_t)(color.r);
-  render_target[4 * (x + y * target_w) + 1] = (uint8_t)(color.g);
-  render_target[4 * (x + y * target_w) + 2] = (uint8_t)(color.b);
-  render_target[4 * (x + y * target_w) + 3] = (uint8_t)(color.a);
+  render_target[4 * (x + y * target_w)] = (uint8_t)(pixel_color.r * 255);
+  render_target[4 * (x + y * target_w) + 1] = (uint8_t)(pixel_color.g * 255);
+  render_target[4 * (x + y * target_w) + 2] = (uint8_t)(pixel_color.b * 255);
+  render_target[4 * (x + y * target_w) + 3] = (uint8_t)(pixel_color.a * 255);
 }
 
 void SoftwareRendererImp::draw_svg(SVG& svg) {
@@ -379,6 +377,8 @@ void SoftwareRendererImp::resolve(void) {
       // render_target[4 * (x + y * target_w) + 3] = (uint8_t)(color.a);
     }
   }
+
+  sample_target = vector<unsigned char>(sample_target.size(), 0);
 
   return;
 }
