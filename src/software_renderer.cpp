@@ -27,19 +27,23 @@ void SoftwareRendererImp::fill_pixel(int x, int y, const Color& color) {
   if (x < 0 || x >= target_w) return;
   if (y < 0 || y >= target_h) return;
 
-  Color pixel_color;
-  float inv255 = 1.0 / 255.0;
-  pixel_color.r = render_target[4 * (x + y * target_w)] * inv255;
-  pixel_color.g = render_target[4 * (x + y * target_w) + 1] * inv255;
-  pixel_color.b = render_target[4 * (x + y * target_w) + 2] * inv255;
-  pixel_color.a = render_target[4 * (x + y * target_w) + 3] * inv255;
+  // Color pixel_color;
+  // float inv255 = 1.0 / 255.0;
+  // pixel_color.r = render_target[4 * (x + y * target_w)] * inv255;
+  // pixel_color.g = render_target[4 * (x + y * target_w) + 1] * inv255;
+  // pixel_color.b = render_target[4 * (x + y * target_w) + 2] * inv255;
+  // pixel_color.a = render_target[4 * (x + y * target_w) + 3] * inv255;
 
-  pixel_color = ref->alpha_blending_helper(pixel_color, color);
+  // pixel_color = ref->alpha_blending_helper(pixel_color, color);
+  // if (x % 50 == 0 && y % 50 == 0) {
+  //   cout << pixel_color.r << ", " << pixel_color.g << ", " << pixel_color.b
+  //        << ", " << pixel_color.a << ", " << endl;
+  // }
 
-  render_target[4 * (x + y * target_w)] = (uint8_t)(pixel_color.r * 255);
-  render_target[4 * (x + y * target_w) + 1] = (uint8_t)(pixel_color.g * 255);
-  render_target[4 * (x + y * target_w) + 2] = (uint8_t)(pixel_color.b * 255);
-  render_target[4 * (x + y * target_w) + 3] = (uint8_t)(pixel_color.a * 255);
+  render_target[4 * (x + y * target_w)] = (uint8_t)(color.r);
+  render_target[4 * (x + y * target_w) + 1] = (uint8_t)(color.g);
+  render_target[4 * (x + y * target_w) + 2] = (uint8_t)(color.b);
+  render_target[4 * (x + y * target_w) + 3] = (uint8_t)(color.a);
 }
 
 void SoftwareRendererImp::draw_svg(SVG& svg) {
@@ -92,7 +96,7 @@ void SoftwareRendererImp::set_sample_target(size_t width, size_t height) {
 
   int target_size = 4 * width * height;
   cout << "Creating supersample vector of size: " << target_size << endl;
-  this->sample_target = vector<uint8_t>(target_size);
+  this->sample_target = vector<uint8_t>(target_size, 0);
 }
 
 void SoftwareRendererImp::set_render_target(unsigned char* render_target,
@@ -108,8 +112,7 @@ void SoftwareRendererImp::set_render_target(unsigned char* render_target,
 
   // This will update the sample_target
   // with the appropriate information
-  int curr_sample_rate = this->sample_rate;
-  set_sample_rate(curr_sample_rate);
+  set_sample_target(width, height);
 }
 
 void SoftwareRendererImp::draw_element(SVGElement* element) {
@@ -316,28 +319,16 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
       int row_index = x * sample_rate;
       int col_index = y * sample_rate;
 
-      if (row_index % 50 == 0 && col_index % 50 == 0) {
-        cout << "X and Y: " << x << " " << y << endl;
-        cout << "X update: " << (1 / sample_rate) << endl;
-        cout << "Target_W: " << target_w << " and Target_H: " << target_h
-             << endl;
-        cout << "RowIndex and ColIndex: " << row_index << " " << col_index
-             << endl;
-        cout << "SS_W is: " << ss_w << endl;
-        cout << "sample_target size: " << sample_target.size() << endl;
-        cout << "Sample index: " << 4 * (row_index + col_index * ss_w) << endl;
-      }
-
       // If so, color it
       if (isInsideTriangle(sx, sy)) {
         sample_target[4 * (row_index + col_index * ss_w)] =
             (uint8_t)(color.r * 255);
         sample_target[4 * (row_index + col_index * ss_w) + 1] =
-            (uint8_t)(color.r * 255);
+            (uint8_t)(color.g * 255);
         sample_target[4 * (row_index + col_index * ss_w) + 2] =
-            (uint8_t)(color.r * 255);
+            (uint8_t)(color.b * 255);
         sample_target[4 * (row_index + col_index * ss_w) + 3] =
-            (uint8_t)(color.r * 255);
+            (uint8_t)(color.a * 255);
       }
     }
   }
@@ -381,17 +372,11 @@ void SoftwareRendererImp::resolve(void) {
       color.b = col_acc[2] / sample_rate;
       color.a = col_acc[3] / sample_rate;
 
-      // if (y % 50 == 0 && x % 50 == 0) {
-      //   cout << "Green level at X=" << x << " and Y=" << y << " is " <<
-      //   color.g
-      //        << endl;
-      // }
-
-      // this->fill_pixel(x, y, color);
-      render_target[4 * (x + y * target_w)] = (uint8_t)(color.r * 255);
-      render_target[4 * (x + y * target_w) + 1] = (uint8_t)(color.g * 255);
-      render_target[4 * (x + y * target_w) + 2] = (uint8_t)(color.b * 255);
-      render_target[4 * (x + y * target_w) + 3] = (uint8_t)(color.a * 255);
+      this->fill_pixel(x, y, color);
+      // render_target[4 * (x + y * target_w)] = (uint8_t)(color.r);
+      // render_target[4 * (x + y * target_w) + 1] = (uint8_t)(color.g);
+      // render_target[4 * (x + y * target_w) + 2] = (uint8_t)(color.b);
+      // render_target[4 * (x + y * target_w) + 3] = (uint8_t)(color.a);
     }
   }
 
