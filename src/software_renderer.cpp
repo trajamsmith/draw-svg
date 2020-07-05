@@ -260,7 +260,32 @@ void SoftwareRendererImp::draw_group(Group& group) {
 // The input arguments in the rasterization functions
 // below are all defined in screen space coordinates
 
-void SoftwareRendererImp::rasterize_point(float x, float y, Color color) {
+void SoftwareRendererImp::set_sample(int x, int y, Color color) {
+  sample_target[4 * (x + y * ss_w)] = color.r;
+  sample_target[4 * (x + y * ss_w) + 1] = color.g;
+  sample_target[4 * (x + y * ss_w) + 2] = color.b;
+  sample_target[4 * (x + y * ss_w) + 3] = color.a;
+}
+
+void SoftwareRendererImp::set_sample_block(int x, int y, Color color) {
+  for (int row = 0; row < sample_rate; row += sample_rate) {
+    int start_index =
+        y * (ss_w * sample_rate) + (x * sample_rate) + (row * ss_w);
+    int end_index = start_index + sample_rate;
+
+    for (int i = start_index; i < end_index; i += 1) {
+      sample_target[4 * i] = color.r;
+      sample_target[4 * i + 1] = color.g;
+      sample_target[4 * i + 2] = color.b;
+      sample_target[4 * i + 3] = color.a;
+    }
+  }
+}
+
+void SoftwareRendererImp::set_nearest_sample_block(float x, float y,
+                                                   Color color) {
+  // Sets a set of samples to preserve FIXED WITH for both points and lines
+
   // fill in the nearest pixel
   int sx = (int)floor(x);
   int sy = (int)floor(y);
@@ -269,41 +294,16 @@ void SoftwareRendererImp::rasterize_point(float x, float y, Color color) {
   if (sx < 0 || sx >= target_w) return;
   if (sy < 0 || sy >= target_h) return;
 
-  int row_index = x * sample_rate;
-  int col_index = y * sample_rate;
+  set_sample_block(sx, sy, color);
+}
 
-  sample_target[4 * (row_index + col_index * ss_w)] = color.r;
-  sample_target[4 * (row_index + col_index * ss_w) + 1] = color.g;
-  sample_target[4 * (row_index + col_index * ss_w) + 2] = color.b;
-  sample_target[4 * (row_index + col_index * ss_w) + 3] = color.a;
+void SoftwareRendererImp::rasterize_point(float x, float y, Color color) {
+  set_nearest_sample_block(x, y, color);
 }
 
 void SoftwareRendererImp::rasterize_line(float x0, float y0, float x1, float y1,
                                          Color color) {
-  // Extra credit (delete the line below and implement your own)
-  // ref->rasterize_line_helper(x0, y0, x1, y1, target_w, target_h, color,
-  // this);
-
-  auto set_nearest_sample = [&](float x, float y) {
-    // fill in the nearest pixel
-    int sx = (int)floor(x);
-    int sy = (int)floor(y);
-
-    // check bounds
-    if (sx < 0 || sx >= target_w) return;
-    if (sy < 0 || sy >= target_h) return;
-
-    int row_index = x * sample_rate;
-    int col_index = y * sample_rate;
-
-    sample_target[4 * (row_index + col_index * ss_w)] = color.r;
-    sample_target[4 * (row_index + col_index * ss_w) + 1] = color.g;
-    sample_target[4 * (row_index + col_index * ss_w) + 2] = color.b;
-    sample_target[4 * (row_index + col_index * ss_w) + 3] = color.a;
-  };
-
-  // Always take the left-most point as the
-  // starting point.
+  // Always take the left-most point as the starting point.
   vector<float> start;
   vector<float> end;
   if (x0 < x1) {
@@ -325,7 +325,7 @@ void SoftwareRendererImp::rasterize_line(float x0, float y0, float x1, float y1,
       x = start[0] + i;
       y = start[1] + (i * slope);
 
-      set_nearest_sample(x, y);
+      set_nearest_sample_block(x, y, color);
     }
   } else if (slope >= 1.0 || slope <= -1.0) {
     // Line mostly vertical
@@ -339,7 +339,7 @@ void SoftwareRendererImp::rasterize_line(float x0, float y0, float x1, float y1,
         y = start[1] - i;
       }
 
-      set_nearest_sample(x, y);
+      set_nearest_sample_block(x, y, color);
     }
   }
 }
@@ -380,10 +380,7 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
 
       // If so, color it
       if (isInsideTriangle(sx, sy)) {
-        sample_target[4 * (row_index + col_index * ss_w)] = color.r;
-        sample_target[4 * (row_index + col_index * ss_w) + 1] = color.g;
-        sample_target[4 * (row_index + col_index * ss_w) + 2] = color.b;
-        sample_target[4 * (row_index + col_index * ss_w) + 3] = color.a;
+        set_sample(row_index, col_index, color);
       }
     }
   }
@@ -405,12 +402,11 @@ void SoftwareRendererImp::resolve(void) {
     for (int y = 0; y < target_h; y++) {
       // Color accumulators
       vector<double> col_acc(4);
-      // Kernel width
-      int k_width = sample_rate;
 
-      for (int row = 0; row < k_width; row += k_width) {
-        int start_index = y * (ss_w * k_width) + (x * k_width) + (row * ss_w);
-        int end_index = start_index + k_width;
+      for (int row = 0; row < sample_rate; row += sample_rate) {
+        int start_index =
+            y * (ss_w * sample_rate) + (x * sample_rate) + (row * ss_w);
+        int end_index = start_index + sample_rate;
 
         for (int i = start_index; i < end_index; i += 1) {
           col_acc[0] = col_acc[0] + sample_target[4 * i];

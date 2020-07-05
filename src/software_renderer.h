@@ -96,8 +96,16 @@ class SoftwareRendererImp : public SoftwareRenderer {
   std::vector<unsigned char> sample_buffer;
   int w;
   int h;
+
   void fill_sample(int sx, int sy, const Color &color);
+
   void fill_pixel(int x, int y, const Color &color);
+
+  void set_sample(int x, int y, Color color);
+
+  void set_sample_block(int x, int y, Color color);
+
+  void set_nearest_sample_block(float x, float y, Color color);
 
  private:
   // Supersampling buffer
