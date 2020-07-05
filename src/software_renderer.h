@@ -101,7 +101,8 @@ class SoftwareRendererImp : public SoftwareRenderer {
 
  private:
   // Supersampling buffer
-  vector<unsigned char> sample_target;
+  // Color values as floats 0 to 1
+  vector<float> sample_target;
 
   // Supersampling buffer dimensions
   size_t ss_w;

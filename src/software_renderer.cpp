@@ -94,7 +94,7 @@ void SoftwareRendererImp::set_sample_target(size_t width, size_t height) {
 
   int target_size = 4 * width * height;
   cout << "Creating supersample vector of size: " << target_size << endl;
-  this->sample_target = vector<uint8_t>(target_size, 0);
+  this->sample_target = vector<float>(target_size, 0.0);
 }
 
 void SoftwareRendererImp::set_render_target(unsigned char* render_target,
@@ -269,12 +269,15 @@ void SoftwareRendererImp::rasterize_point(float x, float y, Color color) {
   if (sx < 0 || sx >= target_w) return;
   if (sy < 0 || sy >= target_h) return;
 
+  int row_index = x * sample_rate;
+  int col_index = y * sample_rate;
+
   // fill sample - NOT doing alpha blending!
   // TODO: Call fill_pixel here to run alpha blending
-  render_target[4 * (sx + sy * target_w)] = (uint8_t)(color.r * 255);
-  render_target[4 * (sx + sy * target_w) + 1] = (uint8_t)(color.g * 255);
-  render_target[4 * (sx + sy * target_w) + 2] = (uint8_t)(color.b * 255);
-  render_target[4 * (sx + sy * target_w) + 3] = (uint8_t)(color.a * 255);
+  sample_target[4 * (row_index + col_index * ss_w)] = color.r;
+  sample_target[4 * (row_index + col_index * ss_w) + 1] = color.g;
+  sample_target[4 * (row_index + col_index * ss_w) + 2] = color.b;
+  sample_target[4 * (row_index + col_index * ss_w) + 3] = color.a;
 }
 
 void SoftwareRendererImp::rasterize_line(float x0, float y0, float x1, float y1,
@@ -319,14 +322,10 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
 
       // If so, color it
       if (isInsideTriangle(sx, sy)) {
-        sample_target[4 * (row_index + col_index * ss_w)] =
-            (uint8_t)(color.r * 255);
-        sample_target[4 * (row_index + col_index * ss_w) + 1] =
-            (uint8_t)(color.g * 255);
-        sample_target[4 * (row_index + col_index * ss_w) + 2] =
-            (uint8_t)(color.b * 255);
-        sample_target[4 * (row_index + col_index * ss_w) + 3] =
-            (uint8_t)(color.a * 255);
+        sample_target[4 * (row_index + col_index * ss_w)] = color.r;
+        sample_target[4 * (row_index + col_index * ss_w) + 1] = color.g;
+        sample_target[4 * (row_index + col_index * ss_w) + 2] = color.b;
+        sample_target[4 * (row_index + col_index * ss_w) + 3] = color.a;
       }
     }
   }
@@ -370,15 +369,17 @@ void SoftwareRendererImp::resolve(void) {
       color.b = col_acc[2] / sample_rate;
       color.a = col_acc[3] / sample_rate;
 
-      this->fill_pixel(x, y, color);
-      // render_target[4 * (x + y * target_w)] = (uint8_t)(color.r);
-      // render_target[4 * (x + y * target_w) + 1] = (uint8_t)(color.g);
-      // render_target[4 * (x + y * target_w) + 2] = (uint8_t)(color.b);
-      // render_target[4 * (x + y * target_w) + 3] = (uint8_t)(color.a);
+      render_target[4 * (x + y * target_w)] = (uint8_t)(color.r * 255);
+      render_target[4 * (x + y * target_w) + 1] = (uint8_t)(color.g * 255);
+      render_target[4 * (x + y * target_w) + 2] = (uint8_t)(color.b * 255);
+      render_target[4 * (x + y * target_w) + 3] = (uint8_t)(color.a * 255);
+
+      fill_pixel(x, y, color);
     }
   }
 
-  sample_target = vector<unsigned char>(sample_target.size(), 0);
+  // Clear sample_target when all said and done
+  sample_target = vector<float>(sample_target.size(), 0.0);
 
   return;
 }
