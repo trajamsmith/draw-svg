@@ -80,15 +80,15 @@ void SoftwareRendererImp::set_sample_rate(size_t sample_rate) {
   cout << "Changing the sample rate." << endl;
   this->sample_rate = sample_rate;
 
-  int new_width = this->target_w * sample_rate;
-  int new_height = this->target_h * sample_rate;
+  int supersample_width = this->target_w * sample_rate;
+  int supersample_height = this->target_h * sample_rate;
 
-  set_sample_target(new_width, new_height);
+  set_sample_target(supersample_width, supersample_height);
 }
 
 void SoftwareRendererImp::set_sample_target(size_t width, size_t height) {
-  this->ss_w = ss_w;
-  this->ss_h = ss_h;
+  this->ss_w = width;
+  this->ss_h = height;
 
   int target_size = 4 * width * height;
   cout << "Creating supersample vector of size: " << target_size << endl;
@@ -310,11 +310,20 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
       float sy = y + (1 / sqrt(sample_rate)) / 2;
 
       // If out of bounds, break
-      // if (sx < 0 || sx >= ss_w) break;
-      // if (sy < 0 || sy >= ss_h) break;
+      if (x < 0 || x >= target_w) break;
+      if (y < 0 || y >= target_h) break;
 
       int row_index = x * sqrt(sample_rate);
       int col_index = y * sqrt(sample_rate);
+
+      if (x % 50 == 0 && y % 50 == 0) {
+        cout << "X and Y: " << x << " " << y << endl;
+        cout << "RowIndex and ColIndex: " << row_index << " " << col_index
+             << endl;
+        cout << "SS_W is: " << ss_w << endl;
+        cout << "sample_target size: " << sample_target.size() << endl;
+        cout << "Sample index: " << 4 * (row_index + col_index * ss_w) << endl;
+      }
 
       // If so, color it
       if (isInsideTriangle(sx, sy)) {
@@ -369,10 +378,11 @@ void SoftwareRendererImp::resolve(void) {
       color.b = col_acc[2] / sample_rate;
       color.a = col_acc[3] / sample_rate;
 
-      if (y % 50 == 0 && x % 50 == 0) {
-        cout << "Red level at X=" << x << " and Y=" << y << " is " << color.r
-             << endl;
-      }
+      // if (y % 50 == 0 && x % 50 == 0) {
+      //   cout << "Green level at X=" << x << " and Y=" << y << " is " <<
+      //   color.g
+      //        << endl;
+      // }
 
       // this->fill_pixel(x, y, color);
       render_target[4 * (x + y * target_w)] = (uint8_t)(color.r * 255);
@@ -381,6 +391,7 @@ void SoftwareRendererImp::resolve(void) {
       render_target[4 * (x + y * target_w) + 3] = (uint8_t)(color.a * 255);
     }
   }
+
   return;
 }
 

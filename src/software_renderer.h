@@ -102,11 +102,11 @@ class SoftwareRendererImp : public SoftwareRenderer {
  private:
   // Supersampling buffer
   vector<unsigned char> sample_target =
-      vector<unsigned char>(target_w * target_h, 0);
+      vector<unsigned char>(4 * target_w * target_h, 0);
 
   // Supersampling buffer dimensions
-  size_t ss_w = target_w;
-  size_t ss_h = target_h;
+  size_t ss_w = this->target_w;
+  size_t ss_h = this->target_h;
 
   // Primitive Drawing //
 
