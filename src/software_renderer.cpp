@@ -272,8 +272,6 @@ void SoftwareRendererImp::rasterize_point(float x, float y, Color color) {
   int row_index = x * sample_rate;
   int col_index = y * sample_rate;
 
-  // fill sample - NOT doing alpha blending!
-  // TODO: Call fill_pixel here to run alpha blending
   sample_target[4 * (row_index + col_index * ss_w)] = color.r;
   sample_target[4 * (row_index + col_index * ss_w) + 1] = color.g;
   sample_target[4 * (row_index + col_index * ss_w) + 2] = color.b;
@@ -283,7 +281,67 @@ void SoftwareRendererImp::rasterize_point(float x, float y, Color color) {
 void SoftwareRendererImp::rasterize_line(float x0, float y0, float x1, float y1,
                                          Color color) {
   // Extra credit (delete the line below and implement your own)
-  ref->rasterize_line_helper(x0, y0, x1, y1, target_w, target_h, color, this);
+  // ref->rasterize_line_helper(x0, y0, x1, y1, target_w, target_h, color,
+  // this);
+
+  auto set_nearest_sample = [&](float x, float y) {
+    // fill in the nearest pixel
+    int sx = (int)floor(x);
+    int sy = (int)floor(y);
+
+    // check bounds
+    if (sx < 0 || sx >= target_w) return;
+    if (sy < 0 || sy >= target_h) return;
+
+    int row_index = x * sample_rate;
+    int col_index = y * sample_rate;
+
+    sample_target[4 * (row_index + col_index * ss_w)] = color.r;
+    sample_target[4 * (row_index + col_index * ss_w) + 1] = color.g;
+    sample_target[4 * (row_index + col_index * ss_w) + 2] = color.b;
+    sample_target[4 * (row_index + col_index * ss_w) + 3] = color.a;
+  };
+
+  // Always take the left-most point as the
+  // starting point.
+  vector<float> start;
+  vector<float> end;
+  if (x0 < x1) {
+    start = {x0, y0};
+    end = {x1, y1};
+  } else {
+    start = {x1, y1};
+    end = {x0, y0};
+  }
+
+  float slope = (end[1] - start[1]) / (end[0] - start[0]);
+  float x;
+  float y;
+
+  if (slope < 1.0 && slope > -1.0) {
+    // Line mostly horizontal
+    float width = end[0] - start[0];
+    for (int i = 0; i < width; i++) {
+      x = start[0] + i;
+      y = start[1] + (i * slope);
+
+      set_nearest_sample(x, y);
+    }
+  } else if (slope >= 1.0 || slope <= -1.0) {
+    // Line mostly vertical
+    float height = end[1] - start[1];
+    for (int i = 0; i < abs(height); i++) {
+      x = start[0] + abs(i * (1 / slope));
+
+      if (height > 0) {
+        y = start[1] + i;
+      } else {
+        y = start[1] - i;
+      }
+
+      set_nearest_sample(x, y);
+    }
+  }
 }
 
 void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
