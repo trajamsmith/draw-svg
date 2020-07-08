@@ -344,10 +344,24 @@ void SoftwareRendererImp::rasterize_line(float x0, float y0, float x1, float y1,
   }
 }
 
+vector<float> getMinMax(vector<float> vals) {
+  float min = vals[0];
+  float max = vals[0];
+
+  for (float n : vals) {
+    if (n < min) {
+      min = n;
+    } else if (n > max) {
+      max = n;
+    }
+  }
+
+  return vector<float>{min, max};
+}
+
 void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
                                              float y1, float x2, float y2,
                                              Color color) {
-  cout << "Rasterizing triangle." << endl;
   // Task 1:
   // Implement triangle rasterization (you may want to call fill_sample here)
   auto isOutsidePlane = [](float x, float y, float x0, float y0, float x1,
@@ -361,12 +375,25 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
     float side_2 = isOutsidePlane(x, y, x1, y1, x2, y2);
     float side_3 = isOutsidePlane(x, y, x2, y2, x0, y0);
 
+    // Per the assignment, we don't need a "fill rule" here,
+    // it's enough to assume true when the point is on a line
+    if (side_1 == 0 || side_1 == 1 || side_3 == 0) {
+      return true;
+    }
+
+    // Whether these are greater than or less than depends on whether
+    // the triangle runs clockwise or counterclockwise!
     return (side_1 < 0 && side_2 < 0 && side_3 < 0);
   };
 
+  vector<float> minmax_x = getMinMax(vector<float>{x0, x1, x2});
+  vector<float> minmax_y = getMinMax(vector<float>{y0, y1, y2});
+
   // Iterate over all the subpixels in the object space
-  for (float x = 0; x < target_w; x = x + (1 / float(sample_rate))) {
-    for (float y = 0; y < target_h; y = y + (1 / float(sample_rate))) {
+  for (float x = minmax_x[0]; x <= minmax_x[1];
+       x = x + (1 / float(sample_rate))) {
+    for (float y = minmax_y[0]; y <= minmax_y[1];
+         y = y + (1 / float(sample_rate))) {
       // Get the center point
       float sx = x + (1 / sample_rate) / 2;
       float sy = y + (1 / sample_rate) / 2;
