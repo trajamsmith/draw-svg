@@ -93,7 +93,7 @@ class SoftwareRendererImp : public SoftwareRenderer {
   // set supersample target
   void set_sample_target(size_t width, size_t height);
 
-  std::vector<unsigned char> sample_buffer;
+  vector<unsigned char> sample_buffer;
   int w;
   int h;
 
