@@ -46,6 +46,18 @@ struct SVGElement {
 
   // transformation list
   Matrix3x3 transform;
+
+  // Transform object coordinate to space or group coordinates
+  inline Vector2D transformMe(Vector2D p) {
+    // map point from 2D Euclidean plane to 3D projective space
+    Vector3D u(p.x, p.y, 1.0);
+
+    // apply projective space transformation
+    u = transform * u;
+
+    // project back to 2D Euclidean plane
+    return Vector2D(u.x / u.z, u.y / u.z);
+  }
 };
 
 struct Group : SVGElement {

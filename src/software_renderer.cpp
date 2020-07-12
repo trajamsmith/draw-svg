@@ -50,7 +50,9 @@ void SoftwareRendererImp::draw_svg(SVG& svg) {
 
   // draw all elements
   for (size_t i = 0; i < svg.elements.size(); ++i) {
-    draw_element(svg.elements[i]);
+    SVGElement* element = svg.elements[i];
+    cout << "Element transform: " << element->transform << endl;
+    draw_element(element);
   }
 
   // draw canvas outline
@@ -219,9 +221,9 @@ void SoftwareRendererImp::draw_polygon(Polygon& polygon) {
 
     // draw as triangles
     for (size_t i = 0; i < triangles.size(); i += 3) {
-      Vector2D p0 = transform(triangles[i + 0]);
-      Vector2D p1 = transform(triangles[i + 1]);
-      Vector2D p2 = transform(triangles[i + 2]);
+      Vector2D p0 = transform(polygon.transformMe(triangles[i + 0]));
+      Vector2D p1 = transform(polygon.transformMe(triangles[i + 1]));
+      Vector2D p2 = transform(polygon.transformMe(triangles[i + 2]));
       rasterize_triangle(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, c);
     }
   }
@@ -422,6 +424,18 @@ void SoftwareRendererImp::rasterize_image(float x0, float y0, float x1,
 // resolve samples to render target
 void SoftwareRendererImp::resolve(void) {
   cout << "Resolving samples to raster." << endl;
+  cout << " " << endl;
+  cout << " " << endl;
+  cout << " " << endl;
+  cout << " " << endl;
+  cout << " " << endl;
+  cout << " " << endl;
+  cout << " " << endl;
+  cout << " " << endl;
+  cout << " " << endl;
+  cout << " " << endl;
+  cout << " " << endl;
+  cout << " " << endl;
   // Task 2:
   // Implement supersampling
   // You may also need to modify other functions marked with "Task 2".
