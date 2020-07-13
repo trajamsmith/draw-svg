@@ -44,32 +44,8 @@ struct SVGElement {
   // styling
   Style style;
 
-  // transformation list
+  // transformation stack
   Matrix3x3 transform;
-
-  // Transform object coordinate to space or group coordinates
-  inline Vector2D selfTransform(Vector2D p) {
-    // map point from 2D Euclidean plane to 3D projective space
-    Vector3D u(p.x, p.y, 1.0);
-
-    // apply projective space transformation
-    u = transform * u;
-
-    // project back to 2D Euclidean plane
-    return Vector2D(u.x / u.z, u.y / u.z);
-  }
-
-  // Transform object coordinate to space or group coordinates
-  inline Vector2D groupTransform(Vector2D p, Matrix3x3 group_transform) {
-    // map point from 2D Euclidean plane to 3D projective space
-    Vector3D u(p.x, p.y, 1.0);
-
-    // apply projective space transformation
-    u = group_transform * u;
-
-    // project back to 2D Euclidean plane
-    return Vector2D(u.x / u.z, u.y / u.z);
-  }
 };
 
 struct Group : SVGElement {
