@@ -12,8 +12,7 @@
 using namespace std;
 
 namespace CS248 {
-
-// Implements SoftwareRenderer //
+#pragma region Implements SoftwareRenderer
 
 // fill a sample location with color
 void SoftwareRendererImp::fill_sample(int sx, int sy, const Color& color) {}
@@ -52,6 +51,8 @@ void SoftwareRendererImp::draw_svg(SVG& svg) {
   // draw all elements
   for (size_t i = 0; i < svg.elements.size(); ++i) {
     draw_element(svg.elements[i]);
+
+    // Reset transformation on element return
     transformation = canvas_to_screen;
   }
 
@@ -114,10 +115,12 @@ void SoftwareRendererImp::set_render_target(unsigned char* render_target,
   // with the appropriate information
   set_sample_target(width, height);
 }
+#pragma endregion
+
+#pragma region Draw SVG
 
 void SoftwareRendererImp::draw_element(SVGElement* element) {
-  // Task 3 (part 1):
-  // Modify this to implement the transformation stack
+  // Recursively compose transformations
   Matrix3x3 temp = transformation;
   transformation = transformation * element->transform;
 
@@ -150,10 +153,12 @@ void SoftwareRendererImp::draw_element(SVGElement* element) {
       break;
   }
 
+  // If at a leaf in the tree, undo transform.
   transformation = temp;
 }
+#pragma endregion
 
-// Primitive Drawing //
+#pragma region Primitive Drawing
 
 void SoftwareRendererImp::draw_point(Point& point) {
   cout << "Drawing point." << endl;
@@ -259,8 +264,9 @@ void SoftwareRendererImp::draw_group(Group& group) {
     draw_element(group.elements[i]);
   }
 }
+#pragma endregion
 
-// Rasterization //
+#pragma region Rasterization
 
 // The input arguments in the rasterization functions
 // below are all defined in screen space coordinates
@@ -395,10 +401,9 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
   vector<float> minmax_y = getMinMax(vector<float>{y0, y1, y2});
 
   // Iterate over all the subpixels in the object space
-  for (float x = minmax_x[0]; x <= minmax_x[1];
-       x = x + (1 / float(sample_rate))) {
-    for (float y = minmax_y[0]; y <= minmax_y[1];
-         y = y + (1 / float(sample_rate))) {
+  float delta = 1 / float(sample_rate);
+  for (float x = floor(minmax_x[0]); x < ceil(minmax_x[1]); x += delta) {
+    for (float y = floor(minmax_y[0]); y < ceil(minmax_y[1]); y += delta) {
       // Get the center point
       float sx = x + (1 / sample_rate) / 2;
       float sy = y + (1 / sample_rate) / 2;
@@ -410,7 +415,7 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
       int row_index = x * sample_rate;
       int col_index = y * sample_rate;
 
-      // If so, color it
+      // If inside triangle, color it
       if (isInsideTriangle(sx, sy)) {
         set_sample(row_index, col_index, color);
       }
@@ -481,5 +486,6 @@ void SoftwareRendererImp::resolve(void) {
 
   return;
 }
+#pragma endregion
 
 }  // namespace CS248
