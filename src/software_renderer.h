@@ -119,28 +119,28 @@ class SoftwareRendererImp : public SoftwareRenderer {
   // Primitive Drawing //
 
   // Draws an SVG element
-  void draw_element(SVGElement *element);
+  void draw_element(SVGElement *element, Matrix3x3 group_transform);
 
   // Draws a point
-  void draw_point(Point &p);
+  void draw_point(Point &p, Matrix3x3 group_transform);
 
   // Draw a line
-  void draw_line(Line &line);
+  void draw_line(Line &line, Matrix3x3 group_transform);
 
   // Draw a polyline
-  void draw_polyline(Polyline &polyline);
+  void draw_polyline(Polyline &polyline, Matrix3x3 group_transform);
 
   // Draw a rectangle
-  void draw_rect(Rect &rect);
+  void draw_rect(Rect &rect, Matrix3x3 group_transform);
 
   // Draw a polygon
-  void draw_polygon(Polygon &polygon);
+  void draw_polygon(Polygon &polygon, Matrix3x3 group_transform);
 
   // Draw a ellipse
-  void draw_ellipse(Ellipse &ellipse);
+  void draw_ellipse(Ellipse &ellipse, Matrix3x3 group_transform);
 
   // Draws a bitmap image
-  void draw_image(Image &image);
+  void draw_image(Image &image, Matrix3x3 group_transform);
 
   // Draw a group
   void draw_group(Group &group);

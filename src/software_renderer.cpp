@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 
+#include "matrix3x3.h"
 #include "triangulation.h"
 
 using namespace std;
@@ -51,8 +52,7 @@ void SoftwareRendererImp::draw_svg(SVG& svg) {
   // draw all elements
   for (size_t i = 0; i < svg.elements.size(); ++i) {
     SVGElement* element = svg.elements[i];
-    cout << "Element transform: " << element->transform << endl;
-    draw_element(element);
+    draw_element(element, Matrix3x3::identity());
   }
 
   // draw canvas outline
@@ -115,32 +115,32 @@ void SoftwareRendererImp::set_render_target(unsigned char* render_target,
   set_sample_target(width, height);
 }
 
-void SoftwareRendererImp::draw_element(SVGElement* element) {
-  cout << "Drawing element." << endl;
+void SoftwareRendererImp::draw_element(SVGElement* element,
+                                       Matrix3x3 group_transform) {
   // Task 3 (part 1):
   // Modify this to implement the transformation stack
 
   switch (element->type) {
     case POINT:
-      draw_point(static_cast<Point&>(*element));
+      draw_point(static_cast<Point&>(*element), group_transform);
       break;
     case LINE:
-      draw_line(static_cast<Line&>(*element));
+      draw_line(static_cast<Line&>(*element), group_transform);
       break;
     case POLYLINE:
-      draw_polyline(static_cast<Polyline&>(*element));
+      draw_polyline(static_cast<Polyline&>(*element), group_transform);
       break;
     case RECT:
-      draw_rect(static_cast<Rect&>(*element));
+      draw_rect(static_cast<Rect&>(*element), group_transform);
       break;
     case POLYGON:
-      draw_polygon(static_cast<Polygon&>(*element));
+      draw_polygon(static_cast<Polygon&>(*element), group_transform);
       break;
     case ELLIPSE:
-      draw_ellipse(static_cast<Ellipse&>(*element));
+      draw_ellipse(static_cast<Ellipse&>(*element), group_transform);
       break;
     case IMAGE:
-      draw_image(static_cast<Image&>(*element));
+      draw_image(static_cast<Image&>(*element), group_transform);
       break;
     case GROUP:
       draw_group(static_cast<Group&>(*element));
@@ -152,33 +152,36 @@ void SoftwareRendererImp::draw_element(SVGElement* element) {
 
 // Primitive Drawing //
 
-void SoftwareRendererImp::draw_point(Point& point) {
+void SoftwareRendererImp::draw_point(Point& point, Matrix3x3 group_transform) {
   cout << "Drawing point." << endl;
-  Vector2D p = transform(point.position);
+  Vector2D p = transform(point.selfTransform(point.position));
   rasterize_point(p.x, p.y, point.style.fillColor);
 }
 
-void SoftwareRendererImp::draw_line(Line& line) {
+void SoftwareRendererImp::draw_line(Line& line, Matrix3x3 group_transform) {
   cout << "Drawing line." << endl;
-  Vector2D p0 = transform(line.from);
-  Vector2D p1 = transform(line.to);
+  Vector2D p0 = transform(line.selfTransform(line.from));
+  Vector2D p1 = transform(line.selfTransform(line.to));
   rasterize_line(p0.x, p0.y, p1.x, p1.y, line.style.strokeColor);
 }
 
-void SoftwareRendererImp::draw_polyline(Polyline& polyline) {
+void SoftwareRendererImp::draw_polyline(Polyline& polyline,
+                                        Matrix3x3 group_transform) {
   Color c = polyline.style.strokeColor;
 
   if (c.a != 0) {
     int nPoints = polyline.points.size();
     for (int i = 0; i < nPoints - 1; i++) {
-      Vector2D p0 = transform(polyline.points[(i + 0) % nPoints]);
-      Vector2D p1 = transform(polyline.points[(i + 1) % nPoints]);
+      Vector2D p0 =
+          transform(polyline.selfTransform(polyline.points[(i + 0) % nPoints]));
+      Vector2D p1 =
+          transform(polyline.selfTransform(polyline.points[(i + 1) % nPoints]));
       rasterize_line(p0.x, p0.y, p1.x, p1.y, c);
     }
   }
 }
 
-void SoftwareRendererImp::draw_rect(Rect& rect) {
+void SoftwareRendererImp::draw_rect(Rect& rect, Matrix3x3 group_transform) {
   Color c;
 
   // draw as two triangles
@@ -187,10 +190,10 @@ void SoftwareRendererImp::draw_rect(Rect& rect) {
   float w = rect.dimension.x;
   float h = rect.dimension.y;
 
-  Vector2D p0 = transform(Vector2D(x, y));
-  Vector2D p1 = transform(Vector2D(x + w, y));
-  Vector2D p2 = transform(Vector2D(x, y + h));
-  Vector2D p3 = transform(Vector2D(x + w, y + h));
+  Vector2D p0 = transform(rect.selfTransform(Vector2D(x, y)));
+  Vector2D p2 = transform(rect.selfTransform(Vector2D(x, y + h)));
+  Vector2D p1 = transform(rect.selfTransform(Vector2D(x + w, y)));
+  Vector2D p3 = transform(rect.selfTransform(Vector2D(x + w, y + h)));
 
   // draw fill
   c = rect.style.fillColor;
@@ -209,7 +212,14 @@ void SoftwareRendererImp::draw_rect(Rect& rect) {
   }
 }
 
-void SoftwareRendererImp::draw_polygon(Polygon& polygon) {
+void SoftwareRendererImp::draw_polygon(Polygon& polygon,
+                                       Matrix3x3 group_transform) {
+  cout << "Drawing polygon." << endl;
+  cout << "Self transform: " << polygon.transform << endl;
+  cout << "Group transform: " << group_transform << endl;
+  cout << " " << endl;
+  cout << " " << endl;
+  cout << " " << endl;
   Color c;
 
   // draw fill
@@ -221,9 +231,12 @@ void SoftwareRendererImp::draw_polygon(Polygon& polygon) {
 
     // draw as triangles
     for (size_t i = 0; i < triangles.size(); i += 3) {
-      Vector2D p0 = transform(polygon.transformMe(triangles[i + 0]));
-      Vector2D p1 = transform(polygon.transformMe(triangles[i + 1]));
-      Vector2D p2 = transform(polygon.transformMe(triangles[i + 2]));
+      Vector2D p0 = transform(polygon.groupTransform(
+          polygon.selfTransform(triangles[i + 0]), group_transform));
+      Vector2D p1 = transform(polygon.groupTransform(
+          polygon.selfTransform(triangles[i + 1]), group_transform));
+      Vector2D p2 = transform(polygon.groupTransform(
+          polygon.selfTransform(triangles[i + 2]), group_transform));
       rasterize_triangle(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, c);
     }
   }
@@ -233,27 +246,33 @@ void SoftwareRendererImp::draw_polygon(Polygon& polygon) {
   if (c.a != 0) {
     int nPoints = polygon.points.size();
     for (int i = 0; i < nPoints; i++) {
-      Vector2D p0 = transform(polygon.points[(i + 0) % nPoints]);
-      Vector2D p1 = transform(polygon.points[(i + 1) % nPoints]);
+      Vector2D p0 = transform(polygon.groupTransform(
+          polygon.selfTransform(polygon.points[(i + 0) % nPoints]),
+          group_transform));
+      Vector2D p1 = transform(polygon.groupTransform(
+          polygon.selfTransform(polygon.points[(i + 1) % nPoints]),
+          group_transform));
       rasterize_line(p0.x, p0.y, p1.x, p1.y, c);
     }
   }
 }
 
-void SoftwareRendererImp::draw_ellipse(Ellipse& ellipse) {
+void SoftwareRendererImp::draw_ellipse(Ellipse& ellipse,
+                                       Matrix3x3 group_transform) {
   // Extra credit
 }
 
-void SoftwareRendererImp::draw_image(Image& image) {
-  Vector2D p0 = transform(image.position);
-  Vector2D p1 = transform(image.position + image.dimension);
+void SoftwareRendererImp::draw_image(Image& image, Matrix3x3 group_transform) {
+  Vector2D p0 = transform(image.selfTransform(image.position));
+  Vector2D p1 =
+      transform(image.selfTransform(image.position + image.dimension));
 
   rasterize_image(p0.x, p0.y, p1.x, p1.y, image.tex);
 }
 
 void SoftwareRendererImp::draw_group(Group& group) {
   for (size_t i = 0; i < group.elements.size(); ++i) {
-    draw_element(group.elements[i]);
+    draw_element(group.elements[i], group.transform);
   }
 }
 
