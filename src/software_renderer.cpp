@@ -279,7 +279,7 @@ void SoftwareRendererImp::set_sample(int x, int y, Color color) {
 }
 
 void SoftwareRendererImp::set_sample_block(int x, int y, Color color) {
-  for (int row = 0; row < sample_rate; row += sample_rate) {
+  for (int row = 0; row < sample_rate; row += 1) {
     int start_index =
         y * (ss_w * sample_rate) + (x * sample_rate) + (row * ss_w);
     int end_index = start_index + sample_rate;
