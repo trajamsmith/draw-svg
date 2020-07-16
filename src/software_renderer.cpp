@@ -97,7 +97,7 @@ void SoftwareRendererImp::set_sample_target(size_t width, size_t height) {
 
   int target_size = 4 * width * height;
   cout << "Creating supersample vector of size: " << target_size << endl;
-  this->sample_target = vector<float>(target_size, 0.0);
+  this->sample_target = vector<float>(target_size, 1.0);
 }
 
 void SoftwareRendererImp::set_render_target(unsigned char* render_target,
@@ -477,7 +477,7 @@ void SoftwareRendererImp::resolve(void) {
   }
 
   // Clear sample_target when all said and done
-  sample_target = vector<float>(sample_target.size(), 0.0);
+  sample_target = vector<float>(sample_target.size(), 1.0);
 
   return;
 }
