@@ -260,6 +260,7 @@ void SoftwareRendererImp::draw_image(Image& image) {
 }
 
 void SoftwareRendererImp::draw_group(Group& group) {
+  cout << "GROUP SIZE" << group.elements.size() << endl;
   for (size_t i = 0; i < group.elements.size(); ++i) {
     draw_element(group.elements[i]);
   }
@@ -375,6 +376,10 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
                                              Color color) {
   // Task 1:
   // Implement triangle rasterization (you may want to call fill_sample here)
+
+  // Use the cross product to determine the winding of the triangle
+  bool is_counterclockwise = (x1 - x2) * (y1 - y0) - (y1 - y2) * (x1 - x0) > 0;
+
   auto isOutsidePlane = [](float x, float y, float x0, float y0, float x1,
                            float y1) {
     return (x - x0) * (y1 - y0) - (y - y0) * (x1 - x0);
@@ -394,7 +399,11 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
 
     // Whether these are greater than or less than depends on whether
     // the triangle runs clockwise or counterclockwise!
-    return (side_1 < 0 && side_2 < 0 && side_3 < 0);
+    if (is_counterclockwise) {
+      return (side_1 < 0 && side_2 < 0 && side_3 < 0);
+    } else {
+      return (side_1 > 0 && side_2 > 0 && side_3 > 0);
+    }
   };
 
   vector<float> minmax_x = getMinMax(vector<float>{x0, x1, x2});
