@@ -432,45 +432,40 @@ void SoftwareRendererImp::rasterize_image(float x0, float y0, float x1,
 // resolve samples to render target
 void SoftwareRendererImp::resolve(void) {
   cout << "Resolving samples to raster." << endl;
-  cout << " " << endl;
-  cout << " " << endl;
-  cout << " " << endl;
-  cout << " " << endl;
-  cout << " " << endl;
-  cout << " " << endl;
-  cout << " " << endl;
-  cout << " " << endl;
-  cout << " " << endl;
-  cout << " " << endl;
-  cout << " " << endl;
-  cout << " " << endl;
   // Task 2:
   // Implement supersampling
   // You may also need to modify other functions marked with "Task 2".
   for (int x = 0; x < target_w; x++) {
     for (int y = 0; y < target_h; y++) {
       // Color accumulators
-      vector<double> col_acc(4);
+      vector<float> col_acc(4);
 
-      for (int row = 0; row < sample_rate; row += sample_rate) {
+      for (int row = 0; row < sample_rate; row += 1) {
         int start_index =
-            y * (ss_w * sample_rate) + (x * sample_rate) + (row * ss_w);
+            (y * (ss_w * sample_rate)) + (x * sample_rate) + (row * ss_w);
         int end_index = start_index + sample_rate;
 
         for (int i = start_index; i < end_index; i += 1) {
-          col_acc[0] = col_acc[0] + sample_target[4 * i];
-          col_acc[1] = col_acc[1] + sample_target[4 * i + 1];
-          col_acc[2] = col_acc[2] + sample_target[4 * i + 2];
-          col_acc[3] = col_acc[3] + sample_target[4 * i + 3];
+          col_acc[0] += sample_target[4 * i];
+          col_acc[1] += sample_target[4 * i + 1];
+          col_acc[2] += sample_target[4 * i + 2];
+          col_acc[3] += sample_target[4 * i + 3];
         }
       }
 
       // Average samples from the sample_target
       Color color;
-      color.r = col_acc[0] / sample_rate;
-      color.g = col_acc[1] / sample_rate;
-      color.b = col_acc[2] / sample_rate;
-      color.a = col_acc[3] / sample_rate;
+      float num_samples = pow(sample_rate, 2.0);
+
+      color.r = col_acc[0] / num_samples;
+      color.g = col_acc[1] / num_samples;
+      color.b = col_acc[2] / num_samples;
+      color.a = col_acc[3] / num_samples;
+
+      // if ((uint8_t)(color.g * 255) != 255 && (uint8_t)(color.g * 255) != 0) {
+      //   cout << "MIXED COLOR: " << color.g << ", at coordinates " << x << " "
+      //        << y << endl;
+      // }
 
       render_target[4 * (x + y * target_w)] = (uint8_t)(color.r * 255);
       render_target[4 * (x + y * target_w) + 1] = (uint8_t)(color.g * 255);

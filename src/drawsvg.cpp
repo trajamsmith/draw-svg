@@ -97,7 +97,9 @@ void DrawSVG::render() {
 }
 
 void DrawSVG::resize(size_t width, size_t height) {
+  cout << "New width: " << width << endl;
   this->width = width;
+  cout << "New height: " << height << endl;
   this->height = height;
 
   // resize render target
@@ -243,6 +245,10 @@ void DrawSVG::mouse_event(int key, int event, unsigned char mods) {
         case MOUSE_LEFT:
           std::cout << "Cursor location (x, y) = (" << cursor_x << ", "
                     << cursor_y << ")" << std::endl;
+
+          software_renderer_imp->get_render_target_color(floor(cursor_x),
+                                                         floor(cursor_y));
+
           leftDown = true;
           break;
       }
