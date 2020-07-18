@@ -44,7 +44,7 @@ struct SVGElement {
   // styling
   Style style;
 
-  // transformation list
+  // transformation stack
   Matrix3x3 transform;
 };
 

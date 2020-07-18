@@ -14,7 +14,7 @@ class Viewport {
 
   inline void set_canvas_to_norm(Matrix3x3 m) { svg_2_norm = m; }
 
-  // set viewbox to look at (x,y) in svg coordinate space. Span defineds
+  // set viewbox to look at (x,y) in svg coordinate space. Span defines
   // the view radius of the viewbox in number of pixels (the amout of pixels
   // included in the viewbox in both x and y direction).
   virtual void set_viewbox(float x, float y, float span) = 0;

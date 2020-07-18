@@ -6,13 +6,13 @@
 #include <memory>
 #include <vector>
 
+#include "matrix3x3.h"
 #include "triangulation.h"
 
 using namespace std;
 
 namespace CS248 {
-
-// Implements SoftwareRenderer //
+#pragma region Implements SoftwareRenderer
 
 // fill a sample location with color
 void SoftwareRendererImp::fill_sample(int sx, int sy, const Color& color) {}
@@ -51,6 +51,9 @@ void SoftwareRendererImp::draw_svg(SVG& svg) {
   // draw all elements
   for (size_t i = 0; i < svg.elements.size(); ++i) {
     draw_element(svg.elements[i]);
+
+    // Reset transformation on element return
+    transformation = canvas_to_screen;
   }
 
   // draw canvas outline
@@ -94,7 +97,7 @@ void SoftwareRendererImp::set_sample_target(size_t width, size_t height) {
 
   int target_size = 4 * width * height;
   cout << "Creating supersample vector of size: " << target_size << endl;
-  this->sample_target = vector<float>(target_size, 0.0);
+  this->sample_target = vector<float>(target_size, 1.0);
 }
 
 void SoftwareRendererImp::set_render_target(unsigned char* render_target,
@@ -112,11 +115,14 @@ void SoftwareRendererImp::set_render_target(unsigned char* render_target,
   // with the appropriate information
   set_sample_target(width, height);
 }
+#pragma endregion
+
+#pragma region Draw SVG
 
 void SoftwareRendererImp::draw_element(SVGElement* element) {
-  cout << "Drawing element." << endl;
-  // Task 3 (part 1):
-  // Modify this to implement the transformation stack
+  // Recursively compose transformations
+  Matrix3x3 temp = transformation;
+  transformation = transformation * element->transform;
 
   switch (element->type) {
     case POINT:
@@ -146,9 +152,13 @@ void SoftwareRendererImp::draw_element(SVGElement* element) {
     default:
       break;
   }
-}
 
-// Primitive Drawing //
+  // If at a leaf in the tree, undo transform.
+  transformation = temp;
+}
+#pragma endregion
+
+#pragma region Primitive Drawing
 
 void SoftwareRendererImp::draw_point(Point& point) {
   cout << "Drawing point." << endl;
@@ -186,8 +196,8 @@ void SoftwareRendererImp::draw_rect(Rect& rect) {
   float h = rect.dimension.y;
 
   Vector2D p0 = transform(Vector2D(x, y));
-  Vector2D p1 = transform(Vector2D(x + w, y));
   Vector2D p2 = transform(Vector2D(x, y + h));
+  Vector2D p1 = transform(Vector2D(x + w, y));
   Vector2D p3 = transform(Vector2D(x + w, y + h));
 
   // draw fill
@@ -213,7 +223,7 @@ void SoftwareRendererImp::draw_polygon(Polygon& polygon) {
   // draw fill
   c = polygon.style.fillColor;
   if (c.a != 0) {
-    // triangulate
+    // triangulater
     vector<Vector2D> triangles;
     triangulate(polygon, triangles);
 
@@ -250,12 +260,14 @@ void SoftwareRendererImp::draw_image(Image& image) {
 }
 
 void SoftwareRendererImp::draw_group(Group& group) {
+  cout << "GROUP SIZE" << group.elements.size() << endl;
   for (size_t i = 0; i < group.elements.size(); ++i) {
     draw_element(group.elements[i]);
   }
 }
+#pragma endregion
 
-// Rasterization //
+#pragma region Rasterization
 
 // The input arguments in the rasterization functions
 // below are all defined in screen space coordinates
@@ -268,7 +280,7 @@ void SoftwareRendererImp::set_sample(int x, int y, Color color) {
 }
 
 void SoftwareRendererImp::set_sample_block(int x, int y, Color color) {
-  for (int row = 0; row < sample_rate; row += sample_rate) {
+  for (int row = 0; row < sample_rate; row += 1) {
     int start_index =
         y * (ss_w * sample_rate) + (x * sample_rate) + (row * ss_w);
     int end_index = start_index + sample_rate;
@@ -364,6 +376,10 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
                                              Color color) {
   // Task 1:
   // Implement triangle rasterization (you may want to call fill_sample here)
+
+  // Use the cross product to determine the winding of the triangle
+  bool is_counterclockwise = (x1 - x2) * (y1 - y0) - (y1 - y2) * (x1 - x0) > 0;
+
   auto isOutsidePlane = [](float x, float y, float x0, float y0, float x1,
                            float y1) {
     return (x - x0) * (y1 - y0) - (y - y0) * (x1 - x0);
@@ -382,18 +398,21 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
     }
 
     // Whether these are greater than or less than depends on whether
-    // the triangle runs clockwise or counterclockwise!
-    return (side_1 < 0 && side_2 < 0 && side_3 < 0);
+    // the triangle runs clockwise or counterclockwise (winding)!
+    if (is_counterclockwise) {
+      return (side_1 < 0 && side_2 < 0 && side_3 < 0);
+    } else {
+      return (side_1 > 0 && side_2 > 0 && side_3 > 0);
+    }
   };
 
   vector<float> minmax_x = getMinMax(vector<float>{x0, x1, x2});
   vector<float> minmax_y = getMinMax(vector<float>{y0, y1, y2});
 
   // Iterate over all the subpixels in the object space
-  for (float x = minmax_x[0]; x <= minmax_x[1];
-       x = x + (1 / float(sample_rate))) {
-    for (float y = minmax_y[0]; y <= minmax_y[1];
-         y = y + (1 / float(sample_rate))) {
+  float delta = 1 / float(sample_rate);
+  for (float x = floor(minmax_x[0]); x < ceil(minmax_x[1]); x += delta) {
+    for (float y = floor(minmax_y[0]); y < ceil(minmax_y[1]); y += delta) {
       // Get the center point
       float sx = x + (1 / sample_rate) / 2;
       float sy = y + (1 / sample_rate) / 2;
@@ -405,7 +424,7 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
       int row_index = x * sample_rate;
       int col_index = y * sample_rate;
 
-      // If so, color it
+      // If inside triangle, color it
       if (isInsideTriangle(sx, sy)) {
         set_sample(row_index, col_index, color);
       }
@@ -428,27 +447,34 @@ void SoftwareRendererImp::resolve(void) {
   for (int x = 0; x < target_w; x++) {
     for (int y = 0; y < target_h; y++) {
       // Color accumulators
-      vector<double> col_acc(4);
+      vector<float> col_acc(4);
 
-      for (int row = 0; row < sample_rate; row += sample_rate) {
+      for (int row = 0; row < sample_rate; row += 1) {
         int start_index =
-            y * (ss_w * sample_rate) + (x * sample_rate) + (row * ss_w);
+            (y * (ss_w * sample_rate)) + (x * sample_rate) + (row * ss_w);
         int end_index = start_index + sample_rate;
 
         for (int i = start_index; i < end_index; i += 1) {
-          col_acc[0] = col_acc[0] + sample_target[4 * i];
-          col_acc[1] = col_acc[1] + sample_target[4 * i + 1];
-          col_acc[2] = col_acc[2] + sample_target[4 * i + 2];
-          col_acc[3] = col_acc[3] + sample_target[4 * i + 3];
+          col_acc[0] += sample_target[4 * i];
+          col_acc[1] += sample_target[4 * i + 1];
+          col_acc[2] += sample_target[4 * i + 2];
+          col_acc[3] += sample_target[4 * i + 3];
         }
       }
 
       // Average samples from the sample_target
       Color color;
-      color.r = col_acc[0] / sample_rate;
-      color.g = col_acc[1] / sample_rate;
-      color.b = col_acc[2] / sample_rate;
-      color.a = col_acc[3] / sample_rate;
+      float num_samples = pow(sample_rate, 2.0);
+
+      color.r = col_acc[0] / num_samples;
+      color.g = col_acc[1] / num_samples;
+      color.b = col_acc[2] / num_samples;
+      color.a = col_acc[3] / num_samples;
+
+      // if ((uint8_t)(color.g * 255) != 255 && (uint8_t)(color.g * 255) != 0) {
+      //   cout << "MIXED COLOR: " << color.g << ", at coordinates " << x << " "
+      //        << y << endl;
+      // }
 
       render_target[4 * (x + y * target_w)] = (uint8_t)(color.r * 255);
       render_target[4 * (x + y * target_w) + 1] = (uint8_t)(color.g * 255);
@@ -460,9 +486,10 @@ void SoftwareRendererImp::resolve(void) {
   }
 
   // Clear sample_target when all said and done
-  sample_target = vector<float>(sample_target.size(), 0.0);
+  sample_target = vector<float>(sample_target.size(), 1.0);
 
   return;
 }
+#pragma endregion
 
 }  // namespace CS248

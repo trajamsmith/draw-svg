@@ -1082,8 +1082,8 @@ CS248/src/CMakeFiles/CS248.dir/clean:
 # Target rules for target src/CMakeFiles/drawsvg.dir
 
 # All Build rule for target.
-src/CMakeFiles/drawsvg.dir/all: CS248/deps/glew/CMakeFiles/glew.dir/all
 src/CMakeFiles/drawsvg.dir/all: CS248/deps/glfw/src/CMakeFiles/glfw.dir/all
+src/CMakeFiles/drawsvg.dir/all: CS248/deps/glew/CMakeFiles/glew.dir/all
 src/CMakeFiles/drawsvg.dir/all: CS248/src/CMakeFiles/CS248.dir/all
 src/CMakeFiles/drawsvg.dir/all: src/CMakeFiles/drawsvg_hdwr.dir/all
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/drawsvg.dir/build.make src/CMakeFiles/drawsvg.dir/depend
