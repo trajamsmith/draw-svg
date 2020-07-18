@@ -56,6 +56,7 @@ class SoftwareRenderer : public SVGRenderer {
     this->canvas_to_screen = canvas_to_screen;
   }
 
+  // Get the color of a pixel by (x, y) coords
   inline void get_render_target_color(int x, int y) {
     int i = 4 * (y * target_w + x);
     printf("Pixel RGBA: %i %i %i %i \n", this->render_target[i],

@@ -398,7 +398,7 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0, float x1,
     }
 
     // Whether these are greater than or less than depends on whether
-    // the triangle runs clockwise or counterclockwise!
+    // the triangle runs clockwise or counterclockwise (winding)!
     if (is_counterclockwise) {
       return (side_1 < 0 && side_2 < 0 && side_3 < 0);
     } else {

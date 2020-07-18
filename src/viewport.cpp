@@ -1,5 +1,8 @@
 #include "viewport.h"
 
+#include <iostream>
+#include <vector>
+
 #include "CS248.h"
 
 namespace CS248 {
@@ -7,11 +10,20 @@ namespace CS248 {
 void ViewportImp::set_viewbox(float x, float y, float span) {
   // Task 3 (part 2):
   // Set svg to normalized device coordinate transformation. Your input
-  // arguments are defined as SVG canvans coordinates.
+  // arguments are defined as SVG canvas coordinates.
 
   this->x = x;
   this->y = y;
   this->span = span;
+
+  double values[9] = {1.0,         0.0, -(x - span), 0.0,     1.0,
+                      -(y - span), 0.0, 0.0,         2 * span};
+  double *data = values;
+
+  Matrix3x3 zoom_matrix(data);
+
+  this->set_canvas_to_norm(zoom_matrix);
+  std::cout << get_canvas_to_norm() << std::endl;
 }
 
 void ViewportImp::update_viewbox(float dx, float dy, float scale) {
